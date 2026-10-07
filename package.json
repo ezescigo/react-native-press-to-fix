@@ -1,0 +1,11 @@
+{
+  "name": "fixmod-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "example"
+  ],
+  "scripts": {
+    "test": "scripts/test.sh"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "press-to-fix",
+  "owner": {
+    "name": "ezescigo"
+  },
+  "metadata": {
+    "description": "Press to Fix: fix React Native UI from the iOS simulator with Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "press-to-fix",
+      "source": "./mod",
+      "description": "Report UI fixes from a React Native app in the iOS simulator straight into your Claude Code session."
+    }
+  ]
+}
