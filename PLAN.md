@@ -87,5 +87,5 @@ PLAN.md                    copy of this plan, updated per step
 - [x] Bugs from real-session recording (fixed, all tests green, sim verified):
   - relative paths in [fix] line resolve against parent git root → absolute paths
   - controlled composer TextInput drops fast keystrokes (sim repro only) → uncontrolled
-- [ ] Record demo GIF (after fixes)
+- [x] Demo GIF recorded from real session (4 fixes, 68s, auto mode) → docs/demo.gif + demo.mp4
 - [ ] npm publish (needs `npm login`)

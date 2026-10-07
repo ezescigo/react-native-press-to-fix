@@ -7,7 +7,10 @@
 ![expo](https://img.shields.io/badge/Expo%20Go%20%26%20dev%20builds-supported-4630eb)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
-<!-- demo -->
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ezescigo/react-native-press-to-fix/main/docs/demo.gif" width="320" alt="Four long presses in Brewline: a price, a filter chip, the Place order button and the rewards bar. Each is fixed by Claude Code and refreshed in the simulator within seconds.">
+  <br><sub>A real session, sped up 1.5×: four bugs fixed in about a minute. <a href="https://github.com/ezescigo/react-native-press-to-fix/raw/main/docs/demo.mp4">MP4</a></sub>
+</p>
 
 You're clicking through your app and spot something off: a price missing its cents, a button that looks disabled. Normally you'd hunt for the component, find the style and describe it to your agent. With press-to-fix you **hold your finger on it for half a second** and type one sentence. The report goes straight into the Claude Code session running in your project, with the exact file and line already filled in. Fast Refresh shows you the fix a few seconds later.
 
