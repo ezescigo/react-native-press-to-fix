@@ -31,7 +31,7 @@ PLAN.md                    copy of this plan, updated per step
 - [x] 4 example app (Pocket, 4 seeded bugs). E2E in sim via Expo Go: long press → composer → report w/ `QuickActions.tsx:9`, components, outlined screenshot; Fast Refresh → `/refreshed` → banner
 - [x] 5 README
 - [x] Bugs found in e2e (fixed, tests green): (a) Return sends stale comment — keystrokes not yet in state; (b) refresh/launch announce wipes banner comment
-- [ ] git tag demo-start (needs first commit)
+- [x] Renamed to react-native-press-to-fix (npm pkg, plugin `press-to-fix`); repo github.com/ezescigo/react-native-press-to-fix, tag demo-start
 
 ## Steps
 
