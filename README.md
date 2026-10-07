@@ -1,129 +1,145 @@
-# Press to Fix
+# react-native-press-to-fix
 
-**Long press anything in your React Native app in the iOS simulator, say what's wrong, and Claude Code fixes it.**
+> Point at a bug in your React Native app. Claude Code fixes it while you watch.
 
-A React Native port of [FixKit](https://github.com/ostiums/fixkit) (MIT). Works with Expo (Expo Go and dev builds) and bare React Native.
+[![npm](https://img.shields.io/npm/v/react-native-press-to-fix)](https://www.npmjs.com/package/react-native-press-to-fix)
+![platform](https://img.shields.io/badge/iOS%20simulator-only-lightgrey)
+![expo](https://img.shields.io/badge/Expo%20Go%20%26%20dev%20builds-supported-4630eb)
+![license](https://img.shields.io/badge/license-MIT-green)
 
-1. **Long press** an element and type what's wrong.
-2. **The report lands** in the Claude Code session already running in your project: the element, the file and line of its JSX, the components around it, a screenshot, your words.
-3. **Claude fixes the code**, Fast Refresh puts it on screen, and a banner follows the fix: `queued → fixing → live`.
+<!-- demo -->
 
-Press to Fix has two parts: the **press-to-fix mod** for Claude Code receives reports, and the **`react-native-press-to-fix`** package sends them from a development build. Production builds render your app untouched.
+You're clicking through your app and spot something off: a price missing its cents, a button that looks disabled. Normally you'd hunt for the component, find the style and describe it to your agent. With press-to-fix you **hold your finger on it for half a second** and type one sentence. The report goes straight into the Claude Code session running in your project, with the exact file and line already filled in. Fast Refresh shows you the fix a few seconds later.
 
-## Quick start
+## Setup
 
-**You need**
+Three steps, about two minutes.
 
-- Claude Code 2.1.287+ and Node.js 18.2+
-- Xcode and an iOS simulator (Press to Fix works in the simulator only)
-- React Native 0.76+ (React 18 or 19), with or without Expo
-
-### 1. Install the mod
+**1. Give Claude Code the plugin**
 
 ```bash
 claude plugin marketplace add ezescigo/react-native-press-to-fix
 claude plugin install press-to-fix@press-to-fix
 ```
 
-It runs its receiver on `127.0.0.1:4757` while the session is open (`FIXMOD_PORT` to change it).
-
-### 2. Add the package
+**2. Add the package to your app**
 
 ```bash
-npm install --save-dev react-native-press-to-fix
+npx expo install react-native-press-to-fix     # Expo
+npm install --save-dev react-native-press-to-fix   # bare React Native
 ```
 
-### 3. Wrap the root
+**3. Wrap your root component**
 
 ```tsx
 import { FixHost } from 'react-native-press-to-fix'
 
 export default function App() {
-  return (
-    <FixHost>
-      <RootNavigator />
-    </FixHost>
-  )
+  return <FixHost>{/* your app */}</FixHost>
 }
 ```
 
-### 4. Run it
+Then run the app in the iOS simulator, start `claude` in the project folder, and long press anything.
 
-1. Add `.fixmod/` to `.gitignore`. Reports are written there.
-2. Let Claude open the screenshots without asking, in the project's Claude Code settings:
+> Add `.fixmod/` to `.gitignore`, since screenshots and statuses are written there. To let Claude open screenshots without asking, add `"Read(./.fixmod/**)"` to `permissions.allow` in `.claude/settings.json`.
 
-   ```json
-   { "permissions": { "allow": ["Read(./.fixmod/**)"] } }
-   ```
+**Requirements:** Claude Code 2.1.287+ · Node 18.2+ · Xcode with an iOS simulator · React Native 0.76+ (React 18 or 19)
 
-3. Start the app in the simulator (`npx expo start --ios`, or `npx react-native run-ios`) and `claude` in the project's root.
-4. Long press an element, type what's wrong, press Return.
+## What Claude receives
 
-`/fix-queue` opens the Fix queue pane.
-
-## Pointing at the right code
-
-Nothing has to be marked. Press to Fix reads React's fibers under the finger and Metro maps them to source:
+Your sentence, plus a single context line:
 
 ```
-[fix r1] src/components/QuickActions.tsx:9 · Text "Send" in <QuickActions> in <HomeScreen> · .fixmod/reports/r1.png
+Prices should show cents
+
+[fix r1] /app/src/components/DrinkRow.tsx:15 · Text "$4.5" in <DrinkRow> in <MenuScreen> · /app/.fixmod/reports/r1.png
 ```
 
-- **The line is where the pressed element's JSX is written**, in your code, never inside `node_modules`: a press on a `<Text>` inside a library button names the line where you used the button.
-- **Components** are yours, innermost first.
+| Part | Where it comes from |
+| --- | --- |
+| `DrinkRow.tsx:15` | The line in **your** code where the pressed element's JSX is written. Library internals are skipped: pressing text inside a third-party button points at the line where you used the button. |
+| `Text "$4.5"` | The element and what it displays. |
+| `<DrinkRow> in <MenuScreen>` | Your components around it, innermost first. |
+| `r1.png` | A simulator screenshot with the element outlined in red. |
 
-Wrap a view in `<Fixable>` to give it a name:
+No setup is needed for any of this. If you want a stable name, wrap a view in `<Fixable name="menu.price">` and the name leads the line. `useFixScreen('Menu')` adds the screen name to reports sent while that component is mounted.
 
-```tsx
-<Fixable name="home.quickActions.send">
-  <Pressable onPress={send}>
-    <Text>Send</Text>
-  </Pressable>
-</Fixable>
+## Following a fix
+
+A pill at the top of the app tracks each request:
+
+| | |
+| --- | --- |
+| 🟡 `queued` | Claude is busy with an earlier request |
+| 🔵 `fixing` | Claude is working on it |
+| 🟣 `rebuilding` | A native rebuild is running (`expo run:ios`, `pod install`…) |
+| 🟢 `live` | Fast Refresh applied the change, so you're looking at the fix |
+| 🔴 `not on screen` | The turn ended without the change reaching the app |
+
+In the terminal, `/fix-queue` opens a pane listing every request with its element, source line and edited files.
+
+## Under the hood
+
+```mermaid
+sequenceDiagram
+  participant App as App (FixHost)
+  participant R as Receiver :4757
+  participant M as Metro
+  participant C as Claude Code
+  App->>App: long press → React DevTools hit test → fibers
+  App->>R: POST /report (comment, fibers, frame)
+  R->>R: xcrun simctl io screenshot
+  R->>M: POST /symbolicate (JSX call stacks)
+  R->>C: report → prompt in the running session
+  C->>C: edit files
+  M-->>App: Fast Refresh
+  App->>R: POST /refreshed
+  R->>C: mark live
 ```
 
-```
-[fix r2] home.quickActions.send · src/components/QuickActions.tsx:9 · Text "Send" in <QuickActions> · .fixmod/reports/r2.png
-```
+- **No native code.** The package is plain TypeScript, so it runs in Expo Go.
+- **It doesn't steal touches.** The long press is detected by observing touch events, so buttons, lists and scroll views keep working. Moving more than 10pt cancels it.
+- **Source lines without a Babel plugin.** React 19 records a stack for every JSX element in development. The receiver asks Metro to map those stacks back to your files. On React 18 it reads Babel's `__source` instead.
+- **Development only.** In production builds `FixHost` returns its children and nothing else runs.
+- **One session owns the port.** Opening a second Claude Code session takes the reports over.
 
-`useFixScreen('Home')` names the screen in every report sent while the calling component is mounted.
+## Troubleshooting
 
-## How it works
+| Symptom | Fix |
+| --- | --- |
+| Pill says *Claude Code is not listening* | Start `claude` in the project. If it's already running, check `/plugin` shows press-to-fix enabled. |
+| Report has no file/line | Metro must be running on the same machine; reports still arrive with the element and screenshot. |
+| Port 4757 is taken | Set `FIXMOD_PORT` for Claude Code and pass `url` to `<FixHost url="http://127.0.0.1:PORT">`. |
 
-```
-app (FixHost) ──POST /report──▶ receiver (node, 127.0.0.1:4757) ──xcrun simctl io screenshot──▶ simulator
-      ▲                               │ ──POST /symbolicate──▶ Metro
-      │ POST /refreshed, GET /status  ▼ one JSON line per report
-      └──────── .fixmod/status.json ◀── the mod: prompt, Fix queue pane, statuses
-```
+## Try it: Brewline
 
-- **The long press** takes half a second. FixHost watches touches without claiming them, so buttons, lists and scroll views keep working; a drag cancels it.
-- **The element** comes from the same hit test as React Native's element inspector. The app sends the fibers from the pressed view outward; React 19's `_debugStack` (or React 18's `_debugSource`) says where each was created, and the receiver asks Metro to map it to a file and line.
-- **The screenshot** is taken by the receiver while the app outlines the element and hides the composer.
-- **"Live"** means Fast Refresh applied an edit (or the app launched again after a native rebuild) while Claude worked on the report.
-- **One session at a time.** A session started later takes port 4757 over.
-
-## Try it on Pocket
-
-`example/` is an Expo wallet with four seeded UI bugs, linked to the package in this repository:
+`example/` holds Brewline, a small coffee-ordering app with four planted bugs:
 
 ```bash
 npm install
-./scripts/reset-demo.sh          # puts the bugs back and opens Pocket in the simulator
+./scripts/reset-demo.sh                 # restores the bugs, opens Brewline in the simulator
 cd example && claude --plugin-dir ../mod
 ```
 
-| Where | Long press | Say |
+| Screen | Press | Say |
 | --- | --- | --- |
-| Home | the Send button | button is shifted |
-| Home | the Top up button | corners don't match the others |
-| Home or Cards | the card holder name | name is cut off |
-| Home or Activity | the salary amount | income should be green, not expenses |
+| Menu | a price like `$4.5` | prices should show cents |
+| Menu | the *All* chip | the selected filter should be the dark one |
+| Order | *Place order* | button looks disabled |
+| Rewards | the progress bar | bar should show 7 of 8 |
 
-## Development
+## Roadmap
 
-`scripts/test.sh` runs every check: plugin validation, the mod's and the receiver's tests, the package's tests and types, and the example's types.
+- **Codex support.** See [CODEX_PLAN.md](CODEX_PLAN.md).
+- Android emulator
+- Physical devices over LAN
 
-## License
+## Contributing
 
-MIT, see [LICENSE](LICENSE).
+`scripts/test.sh` runs everything: plugin validation, the mod and receiver tests, the package's tests and type checks, and the example's types.
+
+## Credits
+
+Inspired by [FixKit](https://github.com/ostiums/fixkit), which does the same for SwiftUI and UIKit. The Claude Code mod here began as a port of its mod.
+
+MIT © ezescigo

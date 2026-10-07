@@ -26,9 +26,10 @@ const ACTIVE = new Set(['queued', 'fixing', 'rebuilding'])
  * answer before it takes the outline down. Null when the simulator can't be read.
  */
 async function capture(id, simulator) {
-  const path = join('.fixmod', 'reports', `${id}.png`)
+  // Absolute, like the source line: the session may have started in a parent folder.
+  const path = join(reportsDir, `${id}.png`)
   try {
-    await screenshot(simulator, join(cwd, path))
+    await screenshot(simulator, path)
     return path
   } catch (error) {
     process.stderr.write(`screenshot: ${error.message}\n`)

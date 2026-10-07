@@ -32,13 +32,8 @@ const LOOK: Record<FixStatus, { mark: string; label: string; color: string }> = 
 
 const isActive = (report: FixReport) => report.status !== 'live' && report.status !== 'stopped'
 
-let cwd = ''
 // The report whose turn is running; its prompt was submitted by this mod.
 let current: string | null = null
-
-function relative(path: string) {
-  return cwd && path.startsWith(cwd + '/') ? path.slice(cwd.length + 1) : path
-}
 
 /** Changes one report, then publishes every status for the app to poll. */
 async function patch($: EngineInterface, id: string, change: (report: FixReport) => FixReport) {
@@ -49,7 +44,8 @@ async function patch($: EngineInterface, id: string, change: (report: FixReport)
 
 async function accept($: EngineInterface, incoming: Incoming) {
   const { file, line } = incoming.source ?? {}
-  const source = file && line ? `${relative(file)}:${line}` : null
+  // Absolute: a session started in a parent folder would resolve a relative path from there.
+  const source = file && line ? `${file}:${line}` : null
   const report: FixReport = {
     id: incoming.id,
     comment: incoming.comment,
@@ -126,7 +122,6 @@ async function listen($: EngineInterface) {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    cwd = e.cwd
     await $.command.register({
       name: 'fix-queue',
       description: 'Show the fix requests sent from the React Native app in the simulator',

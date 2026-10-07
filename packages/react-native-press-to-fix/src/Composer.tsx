@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef } from 'react'
 import { KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
 
 import type { Frame } from './inspect'
@@ -23,7 +23,8 @@ type Props = {
 
 /** Asks what is wrong with the pressed element. It sits on the half of the screen away from it. */
 export function Composer({ frame, touch, label, onSend, onCancel }: Props) {
-  const [comment, setComment] = useState('')
+  // Uncontrolled: a controlled input drops keystrokes that arrive faster than it re-renders.
+  const comment = useRef('')
   const { height } = useWindowDimensions()
   const centre = frame ? frame.top + frame.height / 2 : touch.y
   const atBottom = centre < height / 2
@@ -39,10 +40,10 @@ export function Composer({ frame, touch, label, onSend, onCancel }: Props) {
         accessibilityLabel="What's wrong?"
         autoFocus
         blurOnSubmit
-        onChangeText={setComment}
+        onChangeText={text => (comment.current = text)}
         onSubmitEditing={event => {
           // The input's own text: the last keystrokes may not be in state yet.
-          const text = (event?.nativeEvent?.text ?? comment).trim()
+          const text = (event?.nativeEvent?.text ?? comment.current).trim()
           if (text) onSend(text)
           else onCancel()
         }}
@@ -50,7 +51,6 @@ export function Composer({ frame, touch, label, onSend, onCancel }: Props) {
         placeholderTextColor="#8e8e93"
         returnKeyType="send"
         style={styles.input}
-        value={comment}
       />
     </View>
   )

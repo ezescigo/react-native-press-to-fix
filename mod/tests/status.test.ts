@@ -30,6 +30,7 @@ function receiverLines() {
 function world(on: On) {
   const receiver = receiverLines()
   const statuses: Record<string, string>[] = []
+  const prompts: string[] = []
   let submitted: () => void = () => {}
   const submission = new Promise<void>(resolve => (submitted = resolve))
 
@@ -43,6 +44,7 @@ function world(on: On) {
     return yield* receiver.stream()
   })
   on('prompt.submit', async (_$, e) => {
+    prompts.push(e.text)
     submitted()
     return { text: e.text }
   })
@@ -53,7 +55,7 @@ function world(on: On) {
   on('tool.call', async () => ({ result: 'built and launched' }))
   on('turn.complete', async () => ({ text: '' }))
 
-  return { receiver, statuses, submission }
+  return { receiver, statuses, submission, prompts }
 }
 
 /** Waits until the mod has done what a receiver line asked for. */
@@ -108,4 +110,28 @@ test('without a refresh the fix is not on screen', async ($, on) => {
   await $.turn.complete({ ...turnEnd, reason: 'answer' })
 
   expect(statuses.at(-1)?.r1).toBe('stopped')
+})
+
+test('the prompt names files by absolute path, so a session started in a parent folder finds them', async ($, on) => {
+  const { receiver, statuses, submission, prompts } = world(on)
+  await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
+  receiver.send({
+    type: 'report',
+    report: {
+      id: 'r1',
+      comment: 'Prices should show cents',
+      screen: 'Menu',
+      screenshot: '/project/app/.fixmod/reports/r1.png',
+      pressed: { type: 'Text', text: '$4.5' },
+      components: ['DrinkRow'],
+      source: { file: '/project/app/src/DrinkRow.tsx', line: 15 },
+    },
+  })
+  await submission
+  await until(() => statuses.at(-1)?.r1 === 'fixing')
+
+  expect(prompts[0]).toBe(
+    'Prices should show cents\n\n' +
+      '[fix r1] /project/app/src/DrinkRow.tsx:15 · Text "$4.5" in <DrinkRow> · /project/app/.fixmod/reports/r1.png',
+  )
 })

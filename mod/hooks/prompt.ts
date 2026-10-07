@@ -5,9 +5,9 @@ export const INSTRUCTIONS = `# Fix requests from the running app
 
 A prompt that ends with a line like
 
-[fix r1] src/activity/AmountLabel.tsx:12 · Text "+€4,650.00" in <AmountLabel> in <TransactionRow> · .fixmod/reports/r1.png
-[fix r2] home.quickActions.send · src/home/QuickActions.tsx:8 · Text "Send" in <QuickActions> · .fixmod/reports/r2.png
-[fix r3] View in <CardList> · Cards screen · .fixmod/reports/r3.png
+[fix r1] /app/src/menu/DrinkRow.tsx:15 · Text "$4.5" in <DrinkRow> in <MenuScreen> · /app/.fixmod/reports/r1.png
+[fix r2] order.placeOrder · /app/src/order/OrderScreen.tsx:25 · Text "Place order" in <OrderScreen> · /app/.fixmod/reports/r2.png
+[fix r3] View in <RewardsCard> · Rewards screen · /app/.fixmod/reports/r3.png
 
 was sent from the React Native app running in the iOS simulator by the press-to-fix mod: someone long-pressed an element and typed the text above that line. The line holds the report's id and what is known about the element: the name of the <Fixable name="…"> around it when the app marks it; the file and line of the JSX that rendered it; the host element (Text, View, Image…) with its text; the app's own components around it, innermost first; the screen's name when no line is known; and a screenshot with the element outlined in red, or a red ring where the finger was.
 

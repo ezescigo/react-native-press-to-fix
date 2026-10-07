@@ -78,3 +78,14 @@ PLAN.md                    copy of this plan, updated per step
 - Expo Go support required, or dev builds ok?
 - Publish to npm / marketplace now or later?
 - Port 4747 clashes w/ fixkit if both installed — use 4757?
+
+## Round 2 (publish, GIF, build, Codex, README)
+- [x] Compiled build: lib/commonjs + lib/module + lib/typescript; tests pass against CJS output
+- [x] Demo app replaced: Brewline (coffee) w/ 4 new bugs — differs from fixkit's wallet
+- [x] README rewritten (own structure/voice; credits fixkit)
+- [x] CODEX_PLAN.md (Stop-hook adapter first, app-server later)
+- [x] Bugs from real-session recording (fixed, all tests green, sim verified):
+  - relative paths in [fix] line resolve against parent git root → absolute paths
+  - controlled composer TextInput drops fast keystrokes (sim repro only) → uncontrolled
+- [ ] Record demo GIF (after fixes)
+- [ ] npm publish (needs `npm login`)

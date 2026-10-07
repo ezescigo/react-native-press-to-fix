@@ -78,7 +78,7 @@ test('a report names the innermost element written in the project, its line and 
     screen: 'Activity',
     touch: { x: 321, y: 686 },
     mark: null,
-    screenshot: '.fixmod/reports/r1.png',
+    screenshot: `${project}/.fixmod/reports/r1.png`,
     pressed: { type: 'Text', text: '+€4,650.00' },
     source: { file: `${project}/src/AmountLabel.tsx`, line: 12, column: 7 },
     components: ['AmountLabel', 'TransactionRow'],
