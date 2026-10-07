@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { describePressed, isNativeRebuild, pressedLabel, promptFor } from '../hooks/prompt'
+import { describePressed, isNativeRebuild, pressedLabel, promptFor } from '../core/prompt.mjs'
 
 test('an unmarked element is named by its text, its components and its source line', () => {
   const prompt = promptFor(

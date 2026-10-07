@@ -1,51 +1,67 @@
 # Codex support: plan
 
 ## Context
-press-to-fix works with Claude Code only. The app package and the receiver don't care which agent is on the other end: they speak HTTP and write `.fixmod/`. The Claude-specific part is `mod/`, which puts each report into the running session as a prompt, tracks status and draws the pane. Codex needs its own adapter.
+press-to-fix works with Claude Code only. The app package and the receiver don't care which agent is on the other end: they speak HTTP and write `.fixmod/`. The Claude-specific part is the mod, which puts each report into the running session as a prompt, tracks status and draws the pane. Decision: **one repo for both agents, using the app-server route now.**
 
-What Codex CLI 0.161 offers (sources: learn.chatgpt.com/docs/hooks, /docs/app-server, /docs/plugins, /docs/extend/mcp):
-- **Hooks**, in the same format as Claude's: SessionStart, UserPromptSubmit, Pre/PostToolUse, Stop and others. They're `command` handlers with JSON on stdin and a 600s default timeout. A **Stop** hook returning `{"decision":"block","reason":"…"}` turns `reason` into the next user prompt. SessionStart and UserPromptSubmit can add `additionalContext`.
-- **Plugins**: `.codex-plugin/plugin.json` can bundle hooks, skills and MCP servers.
-- **app-server** (JSON-RPC): `thread/loaded/list`, `turn/start {threadId, input}` (input accepts `localImage`), `turn/steer`, and notifications for turns and items. The TUI attaches to a shared `codex app-server daemon` (experimental).
-- **MCP** tools can't push prompts. Default tool timeout is 60s.
+What Codex CLI 0.160.1 offers, checked locally:
+- `plugin_hooks` is **removed**, so a plugin can't ship hooks. The Stop-hook approach is dropped.
+- `daemon_auto_start` is **stable and on**: the TUI runs on the shared app-server daemon, and `codex app-server proxy` connects any process to it over stdio.
+- app-server JSON-RPC (schema from `codex app-server generate-json-schema`):
+  - `thread/loaded/list`: threads carry `cwd`, `status` and `recencyAt`.
+  - `turn/start {threadId, input}`: input accepts `text` and `localImage`.
+  - Notifications: `turn/started`, `turn/completed`, `item/started`, `item/completed`.
+- `codex queue --thread <id> --message … -i <png>` queues a message for an existing session.
+- Plugins bundle `skills` and `mcpServers` (`.mcp.json`; `cwd: "."` means the plugin root). The marketplace lives at `.agents/plugins/marketplace.json`.
 
 ## Approach
-**Phase 1: Stop-hook adapter (works with the plain `codex` TUI).** A Codex plugin whose Stop hook long-polls the receiver for the next report and returns it as the continuation prompt. It's stable, documented and mirrors the Claude flow.
+A Codex plugin in the **same `mod/` folder** as the Claude one, sharing the receiver and the prompt code:
 
-**Phase 2 (optional): app-server adapter.** It delivers reports while Codex is idle, attaches screenshots as real images and gets richer status. It depends on the experimental daemon.
+```
+mod/
+  .claude-plugin/plugin.json      Claude: hooks module (register.tsx)
+  .codex-plugin/plugin.json       Codex: skill + MCP server
+  .mcp.json                       → node codex/bridge.mjs
+  core/prompt.mjs (+ .d.mts)      shared: INSTRUCTIONS, promptFor, pressedLabel, isNativeRebuild
+  codex/bridge.mjs                MCP server (stdio) that runs the receiver + app-server client
+  skills/press-to-fix/SKILL.md    tells Codex what a [fix rN] prompt means
+  server/                         receiver (unchanged)
+.agents/plugins/marketplace.json  Codex marketplace → ./mod
+```
+
+The bridge is started by Codex with the session, the same way the Claude mod spawns the receiver:
+1. Find this session's thread: `thread/loaded/list` through `codex app-server proxy`, choosing the thread whose `cwd` matches the project, most recent first.
+2. Start the receiver in that `cwd`.
+3. On a report: if the thread is idle, call `turn/start` with the prompt text plus a `localImage` of the screenshot. If it's busy, keep the report `queued` and start it when `turn/completed` arrives.
+4. Track statuses from notifications:
+   - our `turn/started` → `fixing`
+   - a native-build `commandExecution` item → `rebuilding`
+   - `fileChange` items → edited files
+   - `turn/completed` → `stopped`, unless the receiver saw `/refreshed` or `/launched` first, which makes it `live`
+   - statuses are written to `.fixmod/status.json`
+5. Expose one MCP tool, `fix_queue`, which lists the requests and their statuses (stands in for the Claude pane).
 
 ## Steps
+0. **Spike** *(verify before building)*: a throwaway MCP server inside a local plugin that logs its cwd, env and parent process, and checks it can list and subscribe to the TUI's thread through `codex app-server proxy`.
+1. **Shared core**: move the prompt code to `mod/core/prompt.mjs` with types. The Claude mod imports it; its tests stay green.
+2. **App-server client** `codex/appserver.mjs`: JSON-RPC over a child process (`codex app-server proxy`), with request/response, notifications and `initialize`. Tests run against a fake proxy script.
+3. **Bridge** `codex/bridge.mjs`: minimal MCP server (initialize, tools/list, tools/call), receiver child process, report queue, status machine. Tests: report → `turn/start` with text and image; busy → queued, then started after completion; refresh → live; turn end without refresh → stopped; `fix_queue` lists statuses.
+4. **Plugin files**: `.codex-plugin/plugin.json`, `.mcp.json`, `SKILL.md`, marketplace. Then `codex plugin marketplace add ./` locally.
+5. **End-to-end**: Codex TUI in `example/`, a long press on a Brewline bug, and the pill goes `queued → fixing → live`.
+6. **Docs**: README section "Using Codex", and `scripts/test.sh` gains the new tests.
 
-0. **Split core from the Claude adapter.**
-   - Move `prompt.ts` (INSTRUCTIONS, `promptFor`, `pressedLabel`, `isNativeRebuild`) to `core/` as plain TS with no `claude-code` imports.
-   - Move the status machine (`queued → fixing → rebuilding → live/stopped`) into `core/status.ts` as pure functions.
-   - `mod/` imports core. All existing tests stay green.
-
-1. **Receiver: queue API for pull-based agents.**
-   - `GET /next?wait=570` long-polls and answers with the next undelivered report and its prompt text, or 204 on timeout.
-   - `POST /status {id, status}` lets an adapter that can't write `status.json` itself report progress. The receiver writes the file.
-   - Tests (node:test): queued report delivered once, in order; long-poll returns on arrival; 204 on timeout; status persisted and visible via `GET /status`.
-
-2. **Codex plugin** `codex/` (`.codex-plugin/plugin.json` + `hooks/hooks.json`, Node scripts, no deps):
-   - `SessionStart`: start the receiver detached, with a pid file that a newer session reuses or replaces. Return `additionalContext` = INSTRUCTIONS adapted for Codex (screenshots via `view_image`).
-   - `Stop`: if a report is current, mark it `stopped` or keep `live`, the same rule as Claude's `turn.complete`. Then long-poll `/next`. On a report, mark it `fixing` and return `{"decision":"block","reason": prompt}`. On timeout, return nothing and the turn ends normally.
-   - `PostToolUse`: shell commands matching `isNativeRebuild` → `rebuilding`; file edits recorded for the status.
-   - `/refreshed` and `/launched` from the app → `live`, handled in the receiver. It already emits `launched`; with no mod listening, the receiver applies it to the current report.
-   - Tests: drive the hook scripts with stdin JSON fixtures against a real receiver. A report arrives → Stop blocks with the prompt; no report → Stop exits within the wait; refresh during a fix → status `live`.
-
-3. **Docs.** Add a README section "Using Codex" covering install (`/plugins` → local path or marketplace), the trade-off that Codex picks reports up when its turn ends (while it waits, press Esc to type your own prompt), and that the screenshot is referenced by path.
-
-4. **Phase 2 spike: app-server.**
-   - The receiver connects to the daemon socket, finds the user's thread (`thread/loaded/list`, the most recent in this cwd), and sends `turn/start` with `[{type:"text"}, {type:"localImage", path}]` when idle, or `turn/steer` when busy.
-   - Status comes from `turn/started`, `turn/completed` and `fileChange` items.
-   - Behind `FIXMOD_AGENT=codex-app-server`. Keep it only if the daemon is stable.
-
-## Verification
-- `scripts/test.sh` gains `node --test core/ codex/tests/`.
-- Manually: `codex` in `example/` with the plugin, long press a Brewline bug, then check the pill goes `queued → fixing → live` and the fix lands.
+## Progress
+- [x] 0 spike. Findings:
+  - The daemon socket `~/.codex/app-server-control/app-server-control.sock` speaks **WebSocket over a unix socket**. Plain JSON lines (and `app-server proxy` with them) get no answer, so the bridge has its own small dependency-free ws client.
+  - `initialize` → `initialized` → `thread/loaded/list` returns ids; `thread/read` gives `cwd`, `status`, `recencyAt` and `originator`.
+  - An MCP server is started in the project folder, its parent is the codex TUI, and it gets no thread id in env. So the thread is found by `cwd` + recency on the daemon.
+  - **The TUI falls back to an embedded server (thread invisible to the daemon)** when started with `-c`/`--enable` overrides, or when the CLI's feature settings don't match the running daemon's. That happens on this machine: CLI 0.160.1 against daemon 0.161.0. The bridge must detect it and tell the user.
+- [x] 1 shared core: `mod/core/prompt.mjs` (+ `.d.mts`); Claude mod imports it, 11/11 green
+- [x] 2 app-server client: `codex/ws.mjs` (WebSocket over unix socket) + `codex/appserver.mjs`
+- [x] 3 bridge: `codex/fixes.mjs` (7 tests) + `codex/bridge.mjs` (MCP server, receiver, `fix_queue`). Project folder read from parent Codex process (`lsof`), since plugin MCP servers start in the plugin folder
+- [x] 4 plugin files: `.codex-plugin/plugin.json`, `codex/mcp.json`, `codex/skills/press-to-fix/SKILL.md`, `.agents/plugins/marketplace.json`. Kept out of `mod/` root: Claude auto-loads a root `.mcp.json`/`skills/`, which would start the bridge in Claude sessions too
+- [ ] 5 e2e: verified up to delivery in embedded mode (bridge starts from plugin cache, receiver in project, report queued, `fix_queue` explains). Delivery into the TUI thread blocked: CLI 0.160.1 vs daemon 0.161.0 → TUI falls back to embedded
+- [ ] 6 docs
 
 ## Unresolved questions
-- Is it OK for the Stop hook to keep Codex busy while waiting? The alternative is delivering only between turns.
-- Use one plugin repo for both agents, or publish the Codex plugin separately?
-- Phase 2 relies on the experimental daemon. Build it now or wait for it to be stable?
-- Should the receiver mark `live` itself, so the Claude mod logic moves there too?
+- Need Codex CLI matching daemon (0.161) for e2e on this machine — user to update.
+- Several Codex sessions in the same folder: is "most recent thread" good enough?

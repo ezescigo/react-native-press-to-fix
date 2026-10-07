@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "press-to-fix": {
+      "command": "node",
+      "args": ["./codex/bridge.mjs"],
+      "cwd": "."
+    }
+  }
+}

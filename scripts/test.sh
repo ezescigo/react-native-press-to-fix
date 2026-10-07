@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 claude plugin validate .
 claude plugin validate mod
 CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test mod
-node --test --test-concurrency=1 mod/tests/*.node.test.mjs
+node --test --test-concurrency=1 mod/tests/*.node.test.mjs mod/codex/tests/*.node.test.mjs
 
 npm test -w packages/react-native-press-to-fix
 npx tsc --noEmit -p packages/react-native-press-to-fix

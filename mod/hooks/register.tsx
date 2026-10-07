@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { FixReport, FixStatus, Incoming, Receiver } from '../types'
-import { INSTRUCTIONS, isNativeRebuild, pressedLabel, promptFor } from './prompt'
+import { INSTRUCTIONS, isNativeRebuild, pressedLabel, promptFor } from '../core/prompt.mjs'
 
 const PANE = 'fix-queue'
 const TITLE = 'Fix queue'

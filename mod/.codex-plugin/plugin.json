@@ -1,0 +1,25 @@
+{
+  "name": "press-to-fix",
+  "version": "0.1.0",
+  "description": "Long press any element of your React Native app in the iOS simulator, say what is wrong, and the report lands in this Codex session with the file, line and a screenshot.",
+  "author": {
+    "name": "ezescigo",
+    "url": "https://github.com/ezescigo"
+  },
+  "homepage": "https://github.com/ezescigo/react-native-press-to-fix",
+  "repository": "https://github.com/ezescigo/react-native-press-to-fix",
+  "license": "MIT",
+  "keywords": ["react-native", "expo", "ios", "simulator"],
+  "skills": "./codex/skills/",
+  "mcpServers": "./codex/mcp.json",
+  "interface": {
+    "displayName": "Press to Fix",
+    "shortDescription": "Fix React Native UI by long pressing it in the iOS simulator",
+    "longDescription": "Wrap your React Native app in <FixHost> from react-native-press-to-fix. Long press any element in the iOS simulator and type what is wrong: the report reaches this Codex session with the JSX file and line, the components around it and a screenshot. Fast Refresh shows the fix in seconds.",
+    "developerName": "ezescigo",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/ezescigo/react-native-press-to-fix",
+    "defaultPrompt": ["Show the press-to-fix queue"]
+  }
+}
