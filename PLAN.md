@@ -28,7 +28,7 @@ PLAN.md                    copy of this plan, updated per step
 - [x] 1 mod ported (prompt tests pass; status tests need CC ≥2.1.287 — `prompt.compose` missing in 2.1.285)
 - [x] 2 receiver (5 node tests pass). Port 4757 (avoid fixkit clash). Source via fiber chain + Metro /symbolicate (origin read from stack URLs). Screen auto-detect dropped: component chain covers it
 - [x] 3 RN package (8 RNTL tests pass, tsc clean). Composer placed on half away from element instead of slide-up. Fast Refresh via wrapped `__ReactRefresh.performReactRefresh`
-- [x] 4 example app (Pocket, 4 seeded bugs). E2E in sim via Expo Go: long press → composer → report w/ `QuickActions.tsx:9`, components, outlined screenshot; Fast Refresh → `/refreshed` → banner
+- [x] 4 example app (Pocket wallet, later replaced by Brewline coffee app to differ from fixkit). E2E in sim via Expo Go: long press → composer → report w/ `QuickActions.tsx:9`, components, outlined screenshot; Fast Refresh → `/refreshed` → banner
 - [x] 5 README
 - [x] Bugs found in e2e (fixed, tests green): (a) Return sends stale comment — keystrokes not yet in state; (b) refresh/launch announce wipes banner comment
 - [x] Renamed to react-native-press-to-fix (npm pkg, plugin `press-to-fix`); repo github.com/ezescigo/react-native-press-to-fix, tag demo-start

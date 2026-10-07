@@ -6,3 +6,6 @@ android/
 dist/
 *.log
 .DS_Store
+packages/*/lib/
+mod/tsconfig.json
+mod/.claude-plugin/types/

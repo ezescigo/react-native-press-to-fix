@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "description": "Long press any element of your React Native app in the iOS simulator, say what is wrong, and Claude Code fixes it.",
   "license": "MIT",
-  "main": "src/index.ts",
+  "main": "lib/commonjs/index.js",
   "react-native": "src/index.ts",
-  "types": "src/index.ts",
+  "types": "lib/typescript/index.d.ts",
   "files": [
-    "src"
+    "lib",
+    "src",
+    "README.md",
+    "LICENSE"
   ],
   "keywords": [
     "react-native",
@@ -16,6 +19,9 @@
     "devtools"
   ],
   "scripts": {
+    "build": "rm -rf lib && tsc -p tsconfig.build.json && tsc -p tsconfig.build.cjs.json",
+    "prepack": "npm run build && cp ../../README.md ../../LICENSE .",
+    "postpack": "rm -f README.md LICENSE",
     "test": "jest",
     "typecheck": "tsc --noEmit"
   },
@@ -42,5 +48,18 @@
     "url": "https://github.com/ezescigo/react-native-press-to-fix",
     "directory": "packages/react-native-press-to-fix"
   },
-  "homepage": "https://github.com/ezescigo/react-native-press-to-fix"
+  "homepage": "https://github.com/ezescigo/react-native-press-to-fix",
+  "module": "lib/module/index.js",
+  "source": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/typescript/index.d.ts",
+      "react-native": "./src/index.ts",
+      "import": "./lib/module/index.js",
+      "require": "./lib/commonjs/index.js",
+      "default": "./lib/commonjs/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false
 }

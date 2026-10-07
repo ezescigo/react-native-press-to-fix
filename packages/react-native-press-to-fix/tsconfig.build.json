@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "lib/module",
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "target": "es2020",
+    "types": [
+      "react-native"
+    ],
+    "declarationDir": "lib/typescript"
+  },
+  "include": [
+    "src"
+  ]
+}
