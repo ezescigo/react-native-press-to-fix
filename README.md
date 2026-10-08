@@ -1,6 +1,6 @@
 # react-native-press-to-fix
 
-> Point at a bug in your React Native app. Claude Code fixes it while you watch.
+> Point at a bug in your React Native app. Claude Code (or Codex) fixes it while you watch.
 
 [![npm](https://img.shields.io/npm/v/react-native-press-to-fix)](https://www.npmjs.com/package/react-native-press-to-fix)
 ![platform](https://img.shields.io/badge/iOS%20simulator-only-lightgrey)
@@ -47,6 +47,24 @@ Then run the app in the iOS simulator, start `claude` in the project folder, and
 > Add `.fixmod/` to `.gitignore`, since screenshots and statuses are written there. To let Claude open screenshots without asking, add `"Read(./.fixmod/**)"` to `permissions.allow` in `.claude/settings.json`.
 
 **Requirements:** Claude Code 2.1.287+ · Node 18.2+ · Xcode with an iOS simulator · React Native 0.76+ (React 18 or 19)
+
+## Using Codex (beta)
+
+The same plugin works with the [Codex CLI](https://github.com/openai/codex). Install it from this repo:
+
+```bash
+codex plugin marketplace add ezescigo/react-native-press-to-fix
+codex plugin add press-to-fix@press-to-fix
+```
+
+Steps 2 and 3 above stay the same. Start `codex` in the project, and each long press becomes a turn in that session with the screenshot attached. Ask Codex to *show the press-to-fix queue* for statuses; the pill in the app works as it does with Claude.
+
+Codex reports reach the session through Codex's shared app-server, the background server that `codex` attaches to by default. Two things make Codex run a session on its own private server, where reports can't reach it:
+
+- starting `codex` with `-c` or `--enable` overrides
+- a Codex CLI on a different version from the shared server (`codex app-server daemon version` shows both)
+
+The queue tool says so when this happens. With several Codex sessions in one folder, reports go to the most recent one.
 
 ## What Claude receives
 
@@ -133,7 +151,7 @@ cd example && claude --plugin-dir ../mod
 
 ## Roadmap
 
-- **Codex support.** See [CODEX_PLAN.md](CODEX_PLAN.md).
+- Codex support out of beta ([plan](CODEX_PLAN.md))
 - Android emulator
 - Physical devices over LAN
 

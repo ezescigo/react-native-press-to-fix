@@ -45,7 +45,7 @@ export async function connectAppServer({ socket = DAEMON_SOCKET, onNotification 
       connection.send(JSON.stringify({ id, method, params }))
     })
 
-  await call('initialize', { clientInfo: { name: 'press-to-fix', title: 'press-to-fix', version: '0.1.0' } })
+  await call('initialize', { clientInfo: { name: 'press-to-fix', title: 'press-to-fix', version: '0.1.1' } })
   connection.send(JSON.stringify({ method: 'initialized' }))
 
   return { call, close: () => connection.close() }

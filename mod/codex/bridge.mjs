@@ -132,7 +132,7 @@ createInterface({ input: process.stdin })
       reply(id, {
         protocolVersion: params?.protocolVersion ?? '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'press-to-fix', version: '0.1.0' },
+        serverInfo: { name: 'press-to-fix', version: '0.1.1' },
         instructions: INSTRUCTIONS,
       })
     } else if (method === 'tools/list') reply(id, { tools: [TOOL] })

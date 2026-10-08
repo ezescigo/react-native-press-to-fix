@@ -1,6 +1,6 @@
 {
   "name": "press-to-fix",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Long press any element of your React Native app in the iOS simulator, say what is wrong, and the report lands in this session as a prompt; a pane shows the queue until the fix is live.",
   "author": {
     "name": "ezescigo"

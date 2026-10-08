@@ -1,6 +1,6 @@
 {
   "name": "react-native-press-to-fix",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Long press any element of your React Native app in the iOS simulator, say what is wrong, and Claude Code fixes it.",
   "license": "MIT",
   "main": "lib/commonjs/index.js",

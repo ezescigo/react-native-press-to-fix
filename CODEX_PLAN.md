@@ -60,8 +60,8 @@ The bridge is started by Codex with the session, the same way the Claude mod spa
 - [x] 3 bridge: `codex/fixes.mjs` (7 tests) + `codex/bridge.mjs` (MCP server, receiver, `fix_queue`). Project folder read from parent Codex process (`lsof`), since plugin MCP servers start in the plugin folder
 - [x] 4 plugin files: `.codex-plugin/plugin.json`, `codex/mcp.json`, `codex/skills/press-to-fix/SKILL.md`, `.agents/plugins/marketplace.json`. Kept out of `mod/` root: Claude auto-loads a root `.mcp.json`/`skills/`, which would start the bridge in Claude sessions too
 - [ ] 5 e2e: verified up to delivery in embedded mode (bridge starts from plugin cache, receiver in project, report queued, `fix_queue` explains). Delivery into the TUI thread blocked: CLI 0.160.1 vs daemon 0.161.0 → TUI falls back to embedded
-- [ ] 6 docs
+- [x] 6 docs: README "Using Codex (beta)"; scripts/test.sh runs codex tests
 
 ## Unresolved questions
 - Need Codex CLI matching daemon (0.161) for e2e on this machine — user to update.
-- Several Codex sessions in the same folder: is "most recent thread" good enough?
+- ~~Several sessions in one folder~~ → most recent is fine (user)
